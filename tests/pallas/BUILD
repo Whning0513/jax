@@ -689,12 +689,11 @@ jax_multiplatform_test(
     ]),
 )
 
-jax_multiplatform_test(
+jax_py_test(
     name = "tpu_pallas_interpret_test",
     srcs = [
         "tpu_pallas_interpret_test.py",
     ],
-    enable_backends = ["cpu"],
     tags = [
         "nomsan",
         "notsan",
@@ -708,12 +707,11 @@ jax_multiplatform_test(
     ]),
 )
 
-jax_multiplatform_test(
+jax_py_test(
     name = "tpu_pallas_interpret_thread_map_test",
     srcs = [
         "tpu_pallas_interpret_thread_map_test.py",
     ],
-    enable_backends = ["cpu"],
     deps = [
         "//jax/experimental",
         "//jax/experimental:pallas",
@@ -724,12 +722,11 @@ jax_multiplatform_test(
     ]),
 )
 
-jax_multiplatform_test(
+jax_py_test(
     name = "tpu_pallas_interpret_distributed_test",
     srcs = [
         "tpu_pallas_interpret_distributed_test.py",
     ],
-    enable_backends = ["cpu"],
     tags = [
         "noasan",  # Times out.
         "nomsan",
@@ -1567,11 +1564,10 @@ jax_multiplatform_test(
     ] + py_deps("absl/testing"),
 )
 
-jax_multiplatform_test(
+jax_py_test(
     name = "gpu_pallas_interpret_test",
     size = "large",
     srcs = ["gpu_pallas_interpret_test.py"],
-    enable_backends = ["cpu"],
     shard_count = 12,
     deps = [
         "//jax/_src/pallas/mosaic_gpu/interpret:interpret_pallas_call",
@@ -1585,10 +1581,9 @@ jax_multiplatform_test(
     ]),
 )
 
-jax_multiplatform_test(
+jax_py_test(
     name = "gpu_pallas_interpret_race_detection_test",
     srcs = ["gpu_pallas_interpret_race_detection_test.py"],
-    enable_backends = ["cpu"],
     shard_count = 4,
     deps = [
         "//jax/_src/pallas/mosaic_gpu/interpret:interpret_pallas_call",
@@ -1602,10 +1597,9 @@ jax_multiplatform_test(
     ]),
 )
 
-jax_multiplatform_test(
+jax_py_test(
     name = "gpu_pallas_interpret_distributed_test",
     srcs = ["gpu_pallas_interpret_distributed_test.py"],
-    enable_backends = ["cpu"],
     shard_count = 8,
     tags = [
         # Times out.
@@ -1623,16 +1617,29 @@ jax_multiplatform_test(
     ]),
 )
 
-jax_multiplatform_test(
+jax_py_test(
     name = "gpu_pallas_interpret_cluster_barrier_test",
     srcs = ["gpu_pallas_interpret_cluster_barrier_test.py"],
-    enable_backends = ["cpu"],
     shard_count = 8,
     tags = [
         "noasan",
         "nomsan",
         "notsan",
     ],
+    deps = [
+        "//jax/_src/pallas/mosaic_gpu/interpret:interpret_pallas_call",
+        "//jax/experimental:pallas",
+        "//jax/experimental:pallas_mosaic_gpu",
+    ] + py_deps([
+        "absl/testing",
+        "numpy",
+    ]),
+)
+
+jax_py_test(
+    name = "gpu_pallas_interpret_tcgen05_race_detection_test",
+    srcs = ["gpu_pallas_interpret_tcgen05_race_detection_test.py"],
+    shard_count = 6,
     deps = [
         "//jax/_src/pallas/mosaic_gpu/interpret:interpret_pallas_call",
         "//jax/experimental:pallas",
