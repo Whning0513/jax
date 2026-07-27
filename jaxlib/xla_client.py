@@ -107,6 +107,22 @@ def make_c_api_device_topology(
   return _xla.get_c_api_topology(c_api, topology_name, dict(**kwargs))
 
 
+def deserialize_default_c_api_topology(
+    platform: str,
+    serialized_topology: bytes,
+) -> DeviceTopology:
+  """Deserializes a PJRT C API TopologyDescription."""
+  return _xla.deserialize_default_c_api_topology(platform, serialized_topology)
+
+
+def deserialize_c_api_device_topology(
+    c_api: Any,
+    serialized_topology: bytes,
+) -> DeviceTopology:
+  """Deserializes a PJRT C API TopologyDescription."""
+  return _xla.deserialize_c_api_topology(c_api, serialized_topology)
+
+
 def pjrt_plugin_loaded(plugin_name: str) -> bool:
   return _xla.pjrt_plugin_loaded(plugin_name)
 

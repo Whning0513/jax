@@ -573,13 +573,51 @@ NB_MODULE(_jax, m) {
         [](nb::capsule c_api, std::string topology_name,
            const absl::flat_hash_map<std::string, xla::PjRtValueType>& options)
             -> std::shared_ptr<xla::ifrt::Topology> {
-          if (std::string_view(c_api.name()) != "pjrt_c_api") {
+          if (c_api.name() == nullptr ||
+              std::string_view(c_api.name()) != "pjrt_c_api") {
             throw nb::value_error(
                 "Argument to get_c_api_topology was not a pjrt_c_api capsule.");
+          }
+          if (c_api.data() == nullptr) {
+            throw nb::value_error(
+                "Argument to get_c_api_topology contained a null pointer.");
           }
           return std::make_shared<xla::ifrt::PjRtTopology>(xla::ValueOrThrow(
               xla::GetCApiTopology(static_cast<const PJRT_Api*>(c_api.data()),
                                    topology_name, options)));
+        });
+  m.def("deserialize_default_c_api_topology",
+        [](absl::string_view platform_name, nb::bytes serialized_topology)
+            -> std::shared_ptr<xla::ifrt::Topology> {
+          std::string topology_str(
+              static_cast<const char*>(serialized_topology.data()),
+              serialized_topology.size());
+          auto compiler =
+              xla::ValueOrThrow(xla::GetCApiCompiler(platform_name));
+          return std::make_shared<xla::ifrt::PjRtTopology>(xla::ValueOrThrow(
+              compiler->DeserializePjRtTopologyDescription(topology_str)));
+        });
+  m.def("deserialize_c_api_topology",
+        [](nb::capsule c_api, nb::bytes serialized_topology)
+            -> std::shared_ptr<xla::ifrt::Topology> {
+          if (c_api.name() == nullptr ||
+              std::string_view(c_api.name()) != "pjrt_c_api") {
+            throw nb::value_error(
+                "Argument to deserialize_c_api_topology was "
+                "not a pjrt_c_api capsule.");
+          }
+          if (c_api.data() == nullptr) {
+            throw nb::value_error(
+                "Argument to deserialize_c_api_topology contained a null "
+                "pointer.");
+          }
+          std::string topology_str(
+              static_cast<const char*>(serialized_topology.data()),
+              serialized_topology.size());
+          xla::PjRtCApiCompiler compiler(
+              static_cast<const PJRT_Api*>(c_api.data()));
+          return std::make_shared<xla::ifrt::PjRtTopology>(xla::ValueOrThrow(
+              compiler.DeserializePjRtTopologyDescription(topology_str)));
         });
   m.def("get_topology_for_devices",
         [](const std::vector<nb_class_ptr<PyDevice>>& py_devices) {
