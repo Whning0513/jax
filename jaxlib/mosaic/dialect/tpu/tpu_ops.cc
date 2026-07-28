@@ -1089,17 +1089,16 @@ LogicalResult MatmulOp::verify() {
     auto dimension_numbers = getDimensionNumbers().value();
     auto lhs_contracting_dims = dimension_numbers.getLhsContractingDims();
     auto rhs_contracting_dims = dimension_numbers.getRhsContractingDims();
-    if (lhs_contracting_dims.size() != 1) {
-      emitOpError("Not implemented: lhs contracting dims must be of size 1");
+    if (lhs_contracting_dims.empty() || rhs_contracting_dims.empty()) {
+      emitOpError("Not implemented: contracting dims must not be empty");
       return failure();
     }
-    if (rhs_contracting_dims.size() != 1) {
-      emitOpError("Not implemented: rhs contracting dims must be of size 1");
+    if (lhs_contracting_dims.size() != rhs_contracting_dims.size()) {
+      emitOpError(
+          "Not implemented: lhs and rhs contracting dims must have the same "
+          "size");
       return failure();
     }
-
-    auto lhs_contracting_dim = lhs_contracting_dims[0];
-    auto rhs_contracting_dim = rhs_contracting_dims[0];
 
     auto lhs_batch_dims = dimension_numbers.getLhsBatchDims();
     auto rhs_batch_dims = dimension_numbers.getRhsBatchDims();
@@ -1135,22 +1134,20 @@ LogicalResult MatmulOp::verify() {
       return failure();
     }
 
-    if (lhs_ty.getShape()[lhs_contracting_dim] !=
-        rhs_ty.getShape()[rhs_contracting_dim]) {
-      emitOpError(
-          "Not implemented: lhs and rhs contracting dims must be of the same "
-          "size");
-      return failure();
+    for (int64_t i = 0; i < lhs_contracting_dims.size(); ++i) {
+      if (lhs_ty.getDimSize(lhs_contracting_dims[i]) !=
+          rhs_ty.getDimSize(rhs_contracting_dims[i])) {
+        emitOpError(
+            "Not implemented: lhs and rhs contracting dims must be of the same "
+            "size");
+        return failure();
+      }
     }
 
     if (lhs_batch_dims.size() != rhs_batch_dims.size()) {
       emitOpError(
           "Not implemented: lhs and rhs should have the same number of batch "
           "dims");
-      return failure();
-    }
-    if (lhs_batch_dims.size() > 1) {
-      emitOpError("Not implemented: Up to 1 batch dim supported");
       return failure();
     }
 
@@ -1209,23 +1206,14 @@ LogicalResult MatmulOp::verify() {
       }
     }
 
-    const std::optional<int64_t> batch_dim_lhs =
-        lhs_batch_dims.empty() ? std::nullopt
-                               : std::optional<int64_t>(lhs_batch_dims[0]);
-    const std::optional<int64_t> batch_dim_rhs =
-        rhs_batch_dims.empty() ? std::nullopt
-                               : std::optional<int64_t>(rhs_batch_dims[0]);
-
-    // Invariant above enforces only 1 batch dim atm.
-    std::optional<int64_t> batch_size = std::nullopt;
-    if (batch_dim_lhs.has_value()) {
-      batch_size = lhs_ty.getShape()[batch_dim_lhs.value()];
-      auto rhs_batch_size = rhs_ty.getShape()[batch_dim_rhs.value()];
-      if (batch_size != rhs_batch_size) {
-        emitOpError("Not Implemented: batch dims must be equal");
+    for (int64_t i = 0; i < lhs_batch_dims.size(); ++i) {
+      int64_t batch_size_lhs = lhs_ty.getDimSize(lhs_batch_dims[i]);
+      int64_t batch_size_rhs = rhs_ty.getDimSize(rhs_batch_dims[i]);
+      if (batch_size_lhs != batch_size_rhs) {
+        emitOpError("Not Implemented: batch size must be equal");
         return failure();
       }
-      if (batch_size == 0) {
+      if (batch_size_lhs == 0) {
         emitOpError("Illegal: batch size must be > 0");
         return failure();
       }
@@ -1236,9 +1224,6 @@ LogicalResult MatmulOp::verify() {
           "Illegal: output dim order must have an even number of elements.");
       return failure();
     }
-
-    // Invariants above enforce a single batch idx for now. Future extension to
-    // this will be to support multiple batch dims.
 
     // Verify that the output dim order is always in the form of [0,
     // lhs_batch_dims, 0, lhs_non_contracting_dims, 1,
