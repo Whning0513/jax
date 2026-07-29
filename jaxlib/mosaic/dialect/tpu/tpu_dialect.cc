@@ -704,8 +704,12 @@ std::optional<bool> isDivisible(Value value, int64_t divisor, int64_t fuel) {
       return isDivisible(div_op.getLhs(), divisor * *rhs_cst, fuel - 1);
     }
   }
-  if (auto add_op = value.getDefiningOp<arith::AddIOp>()) {
-    return areAllDivisible(add_op.getLhs(), add_op.getRhs(), divisor, fuel);
+  if (auto add_op = value.getDefiningOp<arith::AddIOp>(); add_op != nullptr) {
+    // Modulo arithmetic: (A + B) % d = ((A % d) + (B % d)) % d.
+    if (auto rem = getRemainder(value, divisor, fuel); rem.has_value()) {
+      return *rem == 0;
+    }
+    return std::nullopt;
   }
   if (auto sub_op = value.getDefiningOp<arith::SubIOp>()) {
     return areAllDivisible(sub_op.getLhs(), sub_op.getRhs(), divisor, fuel);
