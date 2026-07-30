@@ -36,6 +36,9 @@ common --repo_env USE_HERMETIC_CC_TOOLCHAIN=1
 # Increase the timeout scaling factor
 common --http_timeout_scaling=3
 
+# Disable after all transitive dependencies have layered correctly.
+common --features=-layering_check
+
 # TODO: Migrate for https://github.com/bazelbuild/bazel/issues/7260
 common:clang_local --noincompatible_enable_cc_toolchain_resolution
 common:clang_local --@rules_ml_toolchain//common:enable_hermetic_cc=False
